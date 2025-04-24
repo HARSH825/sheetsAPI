@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import Image from "next/image"
 import { ChevronLeft, ChevronRight, Check, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -20,17 +20,36 @@ export default function GarageRegistrationForm() {
   const [staffMembers, setStaffMembers] = useState([{ id: 1 }])
   const [showSuccessPopup, setShowSuccessPopup] = useState(false)
   const [isCompleted, setIsCompleted] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState("")
+
+  // Create refs for all form elements
+  const formRefs = useRef<{
+    garageInfo: any | null;
+    aboutGarage: any | null;
+    availableBrands: any | null;
+    staffDetails: any | null;
+    pickAndDrop: any | null;
+    paymentAndServices: any | null;
+  }>({
+    garageInfo: null,
+    aboutGarage: null,
+    availableBrands: null,
+    staffDetails: null,
+    pickAndDrop: null,
+    paymentAndServices: null
+  })
 
   const steps = [
-    { title: "Garage Info", component: <GarageInfoStep /> },
-    { title: "About Garage", component: <AboutGarageStep /> },
-    { title: "Available Brands", component: <AvailableBrandsStep fluids={fluids} setFluids={setFluids} /> },
+    { title: "Garage Info", component: <GarageInfoStep ref={el => formRefs.current.garageInfo = el} /> },
+    { title: "About Garage", component: <AboutGarageStep ref={el => formRefs.current.aboutGarage = el} /> },
+    { title: "Available Brands", component: <AvailableBrandsStep fluids={fluids} setFluids={setFluids} ref={el => formRefs.current.availableBrands = el} /> },
     {
       title: "Staff Details",
-      component: <StaffDetailsStep staffMembers={staffMembers} setStaffMembers={setStaffMembers} />,
+      component: <StaffDetailsStep staffMembers={staffMembers} setStaffMembers={setStaffMembers} ref={el => formRefs.current.staffDetails = el} />,
     },
-    { title: "Pick & Drop", component: <PickAndDropStep /> },
-    { title: "Payment & Services", component: <PaymentAndServicesStep /> },
+    { title: "Pick & Drop", component: <PickAndDropStep ref={el => formRefs.current.pickAndDrop = el} /> },
+    { title: "Payment & Services", component: <PaymentAndServicesStep ref={el => formRefs.current.paymentAndServices = el} /> },
   ]
 
   const handleNext = () => {
@@ -45,13 +64,72 @@ export default function GarageRegistrationForm() {
     }
   }
 
-  const handleSubmit = () => {
-    setShowSuccessPopup(true)
-    // Set a timer to mark the form as completed after the popup is shown
-    setTimeout(() => {
-      setIsCompleted(true)
-      setShowSuccessPopup(false)
-    }, 3000)
+  const handleSubmit = async () => {
+    try {
+      setIsSubmitting(true)
+      setError("")
+
+      // Collect all form data
+      const formData = collectFormData()
+      
+      // Google Script deployment URL
+      const scriptUrl = "YOUR_GOOGLE_SCRIPT_WEB_APP_URL"
+
+      // Send data to Google Sheet
+      const response = await fetch(scriptUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+        mode: 'no-cors' // Required for Google Script
+      })
+
+      // Show success popup
+      setShowSuccessPopup(true)
+      
+      // Set a timer to mark the form as completed after the popup is shown
+      setTimeout(() => {
+        setIsCompleted(true)
+        setShowSuccessPopup(false)
+      }, 3000)
+    } catch (err) {
+      console.error("Error submitting form:", err)
+      setError("An error occurred while submitting the form. Please try again.")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const collectFormData = () => {
+    // Collect form data from all steps
+    const allFormData = {
+      // Get data from refs
+      garageInfo: getFormValues('garageInfo'),
+      aboutGarage: getFormValues('aboutGarage'),
+      fluids: fluids.map(fluid => getFormValues(`fluid-${fluid.id}`)),
+      staffMembers: staffMembers.map(staff => getFormValues(`staff-${staff.id}`)),
+      pickAndDrop: getFormValues('pickAndDrop'),
+      services: getFormValues('services'),
+      payment: getFormValues('payment'),
+      timestamp: new Date().toISOString()
+    }
+
+    return allFormData
+  }
+
+  const getFormValues = (formId: string) => {
+    const form = document.getElementById(formId) as HTMLFormElement
+    if (!form) return {}
+
+    const formData = new FormData(form)
+    const values: { [key: string]: string } = {}
+
+    for (let [key, value] of formData.entries()) {
+      values[key] = String(value)
+    }
+
+    return values
   }
 
   return (
@@ -80,6 +158,13 @@ export default function GarageRegistrationForm() {
               </p>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
+          {error}
         </div>
       )}
 
@@ -145,8 +230,12 @@ export default function GarageRegistrationForm() {
                 Next <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
             ) : (
-              <Button onClick={handleSubmit} className="brand-gradient text-white brand-shadow flex items-center">
-                Submit
+              <Button 
+                onClick={handleSubmit} 
+                className="brand-gradient text-white brand-shadow flex items-center"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Submitting..." : "Submit"}
               </Button>
             )}
           </div>
