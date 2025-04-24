@@ -23,21 +23,15 @@ export default function GarageRegistrationForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
 
-  // Create refs for all form elements
+  // Create refs for all form steps
   const formRefs = useRef<{
     garageInfo: any | null;
     aboutGarage: any | null;
     availableBrands: any | null;
-    staffDetails: any | null;
-    pickAndDrop: any | null;
-    paymentAndServices: any | null;
   }>({
     garageInfo: null,
     aboutGarage: null,
     availableBrands: null,
-    staffDetails: null,
-    pickAndDrop: null,
-    paymentAndServices: null
   })
 
   const steps = [
@@ -46,10 +40,10 @@ export default function GarageRegistrationForm() {
     { title: "Available Brands", component: <AvailableBrandsStep fluids={fluids} setFluids={setFluids} ref={el => formRefs.current.availableBrands = el} /> },
     {
       title: "Staff Details",
-      component: <StaffDetailsStep staffMembers={staffMembers} setStaffMembers={setStaffMembers} ref={el => formRefs.current.staffDetails = el} />,
+      component: <StaffDetailsStep staffMembers={staffMembers} setStaffMembers={setStaffMembers} />,
     },
-    { title: "Pick & Drop", component: <PickAndDropStep ref={el => formRefs.current.pickAndDrop = el} /> },
-    { title: "Payment & Services", component: <PaymentAndServicesStep ref={el => formRefs.current.paymentAndServices = el} /> },
+    { title: "Pick & Drop", component: <PickAndDropStep /> },
+    { title: "Payment & Services", component: <PaymentAndServicesStep /> },
   ]
 
   const handleNext = () => {
@@ -73,7 +67,8 @@ export default function GarageRegistrationForm() {
       const formData = collectFormData()
       
       // Google Script deployment URL
-      const scriptUrl = "YOUR_GOOGLE_SCRIPT_WEB_APP_URL"
+      // Replace with your actual deployed Google Apps Script web app URL
+      const scriptUrl = "https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec"
 
       // Send data to Google Sheet
       const response = await fetch(scriptUrl, {
@@ -102,34 +97,53 @@ export default function GarageRegistrationForm() {
   }
 
   const collectFormData = () => {
-    // Collect form data from all steps
+    // Step 1: Collect garage info data using ref
+    const garageInfoData = formRefs.current.garageInfo?.getFormData() || {}
+    
+    // Step 2: Collect about garage data using ref
+    const aboutGarageData = formRefs.current.aboutGarage?.getFormData() || {}
+    
+    // Step 3: Collect available brands data using ref
+    const availableBrandsData = formRefs.current.availableBrands?.getFormData() || {}
+    
+    // Step 4: Collect staff details data
+    const staffDetailsData = {}
+    staffMembers.forEach((staff, index) => {
+      const staffForm = document.getElementById("staffDetails") as HTMLFormElement
+      if (staffForm) {
+        const formData = new FormData(staffForm)
+        for (let [key, value] of formData.entries()) {
+          if (key.includes(`staffName-${staff.id}`)) staffDetailsData[`staff${index+1}Name`] = value
+          if (key.includes(`staffPhone-${staff.id}`)) staffDetailsData[`staff${index+1}Phone`] = value
+          if (key.includes(`specialist-${staff.id}`)) staffDetailsData[`staff${index+1}Specialist`] = value
+          if (key.includes(`photoLink-${staff.id}`)) staffDetailsData[`staff${index+1}PhotoLink`] = value
+          if (key.includes(`notes-${staff.id}`)) staffDetailsData[`staff${index+1}Notes`] = value
+        }
+      }
+    })
+    
+    // Step 5: Collect pick and drop data
+    const pickDropForm = document.getElementById("pickAndDrop") as HTMLFormElement
+    const pickDropData = pickDropForm ? Object.fromEntries(new FormData(pickDropForm).entries()) : {}
+    
+    // Step 6: Collect payment and services data
+    const paymentServicesForm = document.getElementById("paymentAndServices") as HTMLFormElement
+    const paymentServicesData = paymentServicesForm ? Object.fromEntries(new FormData(paymentServicesForm).entries()) : {}
+    
+    // Combine all data
     const allFormData = {
-      // Get data from refs
-      garageInfo: getFormValues('garageInfo'),
-      aboutGarage: getFormValues('aboutGarage'),
-      fluids: fluids.map(fluid => getFormValues(`fluid-${fluid.id}`)),
-      staffMembers: staffMembers.map(staff => getFormValues(`staff-${staff.id}`)),
-      pickAndDrop: getFormValues('pickAndDrop'),
-      services: getFormValues('services'),
-      payment: getFormValues('payment'),
-      timestamp: new Date().toISOString()
+      ...garageInfoData,
+      ...aboutGarageData,
+      ...availableBrandsData,
+      ...staffDetailsData,
+      ...pickDropData,
+      ...paymentServicesData,
+      timestamp: new Date().toISOString(),
+      fluidCount: fluids.length,
+      staffCount: staffMembers.length
     }
 
     return allFormData
-  }
-
-  const getFormValues = (formId: string) => {
-    const form = document.getElementById(formId) as HTMLFormElement
-    if (!form) return {}
-
-    const formData = new FormData(form)
-    const values: { [key: string]: string } = {}
-
-    for (let [key, value] of formData.entries()) {
-      values[key] = String(value)
-    }
-
-    return values
   }
 
   return (
