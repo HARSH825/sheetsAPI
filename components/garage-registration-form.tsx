@@ -28,10 +28,16 @@ export default function GarageRegistrationForm() {
     garageInfo: any | null;
     aboutGarage: any | null;
     availableBrands: any | null;
+    staffDetails: any | null;
+    pickAndDrop: any | null;
+    paymentAndServices: any | null;
   }>({
     garageInfo: null,
     aboutGarage: null,
     availableBrands: null,
+    staffDetails: null,
+    pickAndDrop: null,
+    paymentAndServices: null,
   })
 
   const steps = [
@@ -40,10 +46,10 @@ export default function GarageRegistrationForm() {
     { title: "Available Brands", component: <AvailableBrandsStep fluids={fluids} setFluids={setFluids} ref={el => formRefs.current.availableBrands = el} /> },
     {
       title: "Staff Details",
-      component: <StaffDetailsStep staffMembers={staffMembers} setStaffMembers={setStaffMembers} />,
+      component: <StaffDetailsStep staffMembers={staffMembers} setStaffMembers={setStaffMembers} ref={el => formRefs.current.staffDetails = el} />,
     },
-    { title: "Pick & Drop", component: <PickAndDropStep /> },
-    { title: "Payment & Services", component: <PaymentAndServicesStep /> },
+    { title: "Pick & Drop", component: <PickAndDropStep ref={el => formRefs.current.pickAndDrop = el} /> },
+    { title: "Payment & Services", component: <PaymentAndServicesStep ref={el => formRefs.current.paymentAndServices = el} /> },
   ]
 
   const handleNext = () => {
@@ -104,38 +110,23 @@ export default function GarageRegistrationForm() {
     const aboutGarageData = formRefs.current.aboutGarage?.getFormData() || {}
     
     // Step 3: Collect available brands data using ref
-    const availableBrandsData = formRefs.current.availableBrands?.getFormData() || {}
+    const availableBrandsData = formRefs.current.availableBrands?.getFormData() || { fluids: [] }
     
-    // Step 4: Collect staff details data
-    const staffDetailsData = {}
-    staffMembers.forEach((staff, index) => {
-      const staffForm = document.getElementById("staffDetails") as HTMLFormElement
-      if (staffForm) {
-        const formData = new FormData(staffForm)
-        for (let [key, value] of formData.entries()) {
-          if (key.includes(`staffName-${staff.id}`)) staffDetailsData[`staff${index+1}Name`] = value
-          if (key.includes(`staffPhone-${staff.id}`)) staffDetailsData[`staff${index+1}Phone`] = value
-          if (key.includes(`specialist-${staff.id}`)) staffDetailsData[`staff${index+1}Specialist`] = value
-          if (key.includes(`photoLink-${staff.id}`)) staffDetailsData[`staff${index+1}PhotoLink`] = value
-          if (key.includes(`notes-${staff.id}`)) staffDetailsData[`staff${index+1}Notes`] = value
-        }
-      }
-    })
+    // Step 4: Collect staff details data using ref
+    const staffDetailsData = formRefs.current.staffDetails?.getFormData() || { staffMembers: [] }
     
-    // Step 5: Collect pick and drop data
-    const pickDropForm = document.getElementById("pickAndDrop") as HTMLFormElement
-    const pickDropData = pickDropForm ? Object.fromEntries(new FormData(pickDropForm).entries()) : {}
+    // Step 5: Collect pick and drop data using ref
+    const pickDropData = formRefs.current.pickAndDrop?.getFormData() || {}
     
-    // Step 6: Collect payment and services data
-    const paymentServicesForm = document.getElementById("paymentAndServices") as HTMLFormElement
-    const paymentServicesData = paymentServicesForm ? Object.fromEntries(new FormData(paymentServicesForm).entries()) : {}
+    // Step 6: Collect payment and services data using ref
+    const paymentServicesData = formRefs.current.paymentAndServices?.getFormData() || {}
     
     // Combine all data
     const allFormData = {
       ...garageInfoData,
       ...aboutGarageData,
-      ...availableBrandsData,
-      ...staffDetailsData,
+      fluids: availableBrandsData.fluids,
+      staffMembers: staffDetailsData.staffMembers,
       ...pickDropData,
       ...paymentServicesData,
       timestamp: new Date().toISOString(),
