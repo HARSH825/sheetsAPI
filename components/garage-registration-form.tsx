@@ -71,7 +71,7 @@ export default function GarageRegistrationForm() {
   
       const formData = collectFormData();
       
-      const scriptUrl = "https://script.google.com/macros/s/AKfycbyeRs2ieC_sIryc1zBKg14kfaGWa3UrHSLIClBQz9Pp6Y79qnLac-WmlCtb_lvLynVSPQ/exec";
+      const scriptUrl = "https://script.google.com/macros/s/AKfycbzM6SQ2t-7xEgDrpmAopqZVMQhWChDhFBox2dAzZkbz66463NBmVMl703NRVWpK7TdaCg/exec";
   
       await fetch(scriptUrl, {
         method: 'POST',
