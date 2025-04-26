@@ -66,42 +66,37 @@ export default function GarageRegistrationForm() {
 
   const handleSubmit = async () => {
     try {
-      setIsSubmitting(true)
-      setError("")
-
-      // Collect all form data
-      const formData = collectFormData()
+      setIsSubmitting(true);
+      setError("");
+  
+      const formData = collectFormData();
       
-      // Google Script deployment URL
-      // Replace with your actual deployed Google Apps Script web app URL
-      const scriptUrl = "https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec"
-
-      // Send data to Google Sheet
-      const response = await fetch(scriptUrl, {
+      const scriptUrl = "https://script.google.com/macros/s/AKfycbyeRs2ieC_sIryc1zBKg14kfaGWa3UrHSLIClBQz9Pp6Y79qnLac-WmlCtb_lvLynVSPQ/exec";
+  
+      await fetch(scriptUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(formData),
-        mode: 'no-cors' // Required for Google Script
-      })
-
+        mode: 'no-cors' 
+      });
+  
       // Show success popup
-      setShowSuccessPopup(true)
+      setShowSuccessPopup(true);
       
       // Set a timer to mark the form as completed after the popup is shown
       setTimeout(() => {
-        setIsCompleted(true)
-        setShowSuccessPopup(false)
-      }, 3000)
+        setIsCompleted(true);
+        setShowSuccessPopup(false);
+      }, 3000);
     } catch (err) {
-      console.error("Error submitting form:", err)
-      setError("An error occurred while submitting the form. Please try again.")
+      console.error("Error submitting form:", err);
+      setError("An error occurred while submitting the form. Please try again.");
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
-
+  };
   const collectFormData = () => {
     // Step 1: Collect garage info data using ref
     const garageInfoData = formRefs.current.garageInfo?.getFormData() || {}
